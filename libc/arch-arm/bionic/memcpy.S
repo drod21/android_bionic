@@ -94,6 +94,26 @@ memcpy:
         pld         [r1, #(CACHE_LINE_SIZE * 0)]
         pld         [r1, #(CACHE_LINE_SIZE * 1)]
 
+#ifdef HAVE_32_BYTE_CACHE_LINE
+        /* make sure we have at least 32 bytes to copy */
+        subs        r2, r2, #32
+        blo         4f
+
+        /* preload all the cache lines we need.
+         * NOTE: the number of pld below depends on PREFETCH_DISTANCE,
+         * ideally would would increase the distance in the main loop to
+         * avoid the goofy code below. In practice this doesn't seem to make
+         * a big difference.
+         */
+        pld         [r1, #(PREFETCH_DISTANCE)]
+
+1:      /* The main loop copies 32 bytes at a time */
+        vld1.8      {d0  - d3},   [r1]!
+        pld         [r1, #(PREFETCH_DISTANCE)]
+        subs        r2, r2, #32
+        vst1.8      {d0  - d3},   [r0, :128]!
+        bhs         1b
+#else
         /* make sure we have at least 64 bytes to copy */
         subs        r2, r2, #64
         blo         2f
@@ -126,7 +146,7 @@ memcpy:
         subs        r2, r2, #32
         vst1.8      {d0 - d3}, [r0, :128]!
         bhs         3b
-
+#endif
 4:      /* less than 32 left */
         add         r2, r2, #32
         tst         r2, #0x10

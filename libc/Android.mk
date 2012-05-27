@@ -346,6 +346,7 @@ libc_common_src_files += \
 	arch-arm/bionic/__get_sp.S \
 	arch-arm/bionic/_exit_with_stack_teardown.S \
 	arch-arm/bionic/_setjmp.S \
+	arch-arm/bionic/abort_arm.S \
 	arch-arm/bionic/atomics_arm.S \
 	arch-arm/bionic/clone.S \
 	arch-arm/bionic/eabi.c \
@@ -475,6 +476,13 @@ ifeq ($(strip $(DEBUG_BIONIC_LIBC)),true)
   libc_common_cflags += -DDEBUG
 endif
 
+# To customize dlmalloc's alignment, set BOARD_MALLOC_ALIGNMENT in
+# the appropriate BoardConfig.mk file.
+#
+ifneq ($(BOARD_MALLOC_ALIGNMENT),)
+  libc_common_cflags += -DMALLOC_ALIGNMENT=$(BOARD_MALLOC_ALIGNMENT)
+endif
+
 ifeq ($(TARGET_ARCH),arm)
   libc_common_cflags += -fstrict-aliasing
   libc_crt_target_cflags := -mthumb-interwork
@@ -489,7 +497,7 @@ ifeq ($(TARGET_ARCH),arm)
     libc_common_cflags += -DHAVE_ARM_TLS_REGISTER
   endif
   #
-  # Define HAVE_32_BYTE_CACHE_LINE to indicate to C
+  # Define HAVE_32_BYTE_CACHE_LINES to indicate to C
   # library it should use to 32-byte version of memcpy, and not
   # the 64-byte version.
   #

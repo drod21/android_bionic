@@ -26,11 +26,7 @@ endif
 # LINKER_TEXT_BASE rounded down to a megabyte.
 LINKER_AREA_SIZE := 0x01000000
 
-LOCAL_LDFLAGS := -Wl,-Ttext,$(LINKER_TEXT_BASE)
-
-LOCAL_CFLAGS += -DPRELINK
-LOCAL_CFLAGS += -DLINKER_TEXT_BASE=$(LINKER_TEXT_BASE)
-LOCAL_CFLAGS += -DLINKER_AREA_SIZE=$(LINKER_AREA_SIZE)
+LOCAL_CFLAGS += -fno-stack-protector
 
 # Set LINKER_DEBUG to either 1 or 0
 #
@@ -72,6 +68,9 @@ LOCAL_STATIC_LIBRARIES := libc_nomalloc
 LOCAL_MODULE_CLASS := EXECUTABLES
 LOCAL_MODULE_SUFFIX := $(TARGET_EXECUTABLE_SUFFIX)
 
+# we don't want crtbegin.o (because we have begin.o), so unset it
+# just for this module
+LOCAL_NO_CRT := true
 
 include $(BUILD_SYSTEM)/dynamic_binary.mk
 
@@ -83,11 +82,3 @@ $(linked_module): $(TARGET_CRTBEGIN_STATIC_O) $(all_objects) $(all_libraries) $(
 #
 # end of BUILD_EXECUTABLE hack
 #
-
-# we don't want crtbegin.o (because we have begin.o), so unset it
-# just for this module
-$(LOCAL_BUILT_MODULE): TARGET_CRTBEGIN_STATIC_O :=
-# This line is not strictly necessary because the dynamic linker is built
-# as a static executable, but it won't hurt if in the future we start
-# building the linker as a dynamic one.
-$(LOCAL_BUILT_MODULE): TARGET_CRTBEGIN_DYNAMIC_O :=
