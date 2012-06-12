@@ -408,10 +408,7 @@ android_getaddrinfo_proxy(
 {
 	int sock;
 	const int one = 1;
-	union {
-		struct sockaddr_un un;
-		struct sockaddr generic;
-	} proxy_addr;
+	struct sockaddr_un proxy_addr;
 	const char* cache_mode = getenv("ANDROID_DNS_MODE");
 	FILE* proxy = NULL;
 	int success = 0;
@@ -452,12 +449,12 @@ android_getaddrinfo_proxy(
 
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 	memset(&proxy_addr, 0, sizeof(proxy_addr));
-	proxy_addr.un.sun_family = AF_UNIX;
-	strlcpy(proxy_addr.un.sun_path, "/dev/socket/dnsproxyd",
-		sizeof(proxy_addr.un.sun_path));
+	proxy_addr.sun_family = AF_UNIX;
+	strlcpy(proxy_addr.sun_path, "/dev/socket/dnsproxyd",
+		sizeof(proxy_addr.sun_path));
 	if (TEMP_FAILURE_RETRY(connect(sock,
-				       &proxy_addr.generic,
-				       sizeof(proxy_addr.un))) != 0) {
+				       (const struct sockaddr*) &proxy_addr,
+				       sizeof(proxy_addr))) != 0) {
 		close(sock);
 		return -1;
 	}
@@ -1544,7 +1541,7 @@ _get_scope(const struct sockaddr *addr)
 
 /* RFC 4380, section 2.6 */
 #define IN6_IS_ADDR_TEREDO(a)	 \
-	(((a)->s6_addr32[0]) == ntohl(0x20010000))
+	((*(const uint32_t *)(const void *)(&(a)->s6_addr[0]) == ntohl(0x20010000)))
 
 /* RFC 3056, section 2. */
 #define IN6_IS_ADDR_6TO4(a)	 \

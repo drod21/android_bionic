@@ -231,7 +231,7 @@ MD5_Update (struct md5 *m, const void *v, size_t len)
       }
       calc(m, current);
 #else
-      calc(m, m->save32);
+      calc(m, (u_int32_t*)m->save);
 #endif
       offset = 0;
     }
